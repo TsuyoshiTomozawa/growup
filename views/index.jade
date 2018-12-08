@@ -3,3 +3,24 @@ extends layout
 block content
   h1= title
   p Welcome to #{title}
+  div
+    if user
+      div
+        a(href="/logout") #{user.username} をログアウト
+      div
+        a(href="/values/new") 予定を作る
+      - var hasValues = values.length > 0
+      if hasValues
+        h3 あなたの価値
+        table(class="table")
+          tr
+            th 予定名
+            th 更新日時
+          each value in values
+            tr
+              td
+                a(href="/values/#{value.valuesID}") #{valuecreatedBy}
+              td #{value.updatedAt}
+    else
+      div
+       a(href="/login") ログイン

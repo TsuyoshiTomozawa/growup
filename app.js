@@ -8,6 +8,18 @@ var helmet = require('helmet');
 var session = require('express-session');
 var passport = require('passport');
 
+// モデルの読み込み
+var User = require('./models/user');
+var Values = require('./models/values');
+var GoodThings = require('./models/goodThings');
+User.sync().then(() => {
+  Values.belongsTo(User, {foreignKey: 'createdBy'});
+  Values.sync().then(() => {
+    GoodThings.belongsTo(Values, {foreignKey: 'valuesId'});
+    GoodThings.sync();
+  });
+});
+
 var GitHubStrategy = require('passport-github2').Strategy;
 var GITHUB_CLIENT_ID = 'cb3d589d034f64b506a7';
 var GITHUB_CLIENT_SECRET = 'e583ffcc19184f052af65fbb004f837fc2bbe67d';
@@ -28,7 +40,12 @@ passport.use(new GitHubStrategy({
 },
   function (accessToken, refreshToken, profile, done) {
     process.nextTick(function () {
-      return done(null, profile);
+      User.upsert({
+              userId: profile.id,
+              username: profile.username
+            }).then(() => {
+              done(null, profile);
+            });
     });
   }
 ));
@@ -36,6 +53,7 @@ passport.use(new GitHubStrategy({
 var routes = require('./routes/index');
 var login = require('./routes/login');
 var logout = require('./routes/logout');
+var values = require('./routes/values');
 
 var app = express();
 app.use(helmet());
@@ -59,6 +77,7 @@ app.use(passport.session());
 app.use('/', routes);
 app.use('/login', login);
 app.use('/logout', logout);
+app.use('/values', values);
 
 app.get('/auth/github',
   passport.authenticate('github', { scope: ['user:email'] }),
